@@ -198,7 +198,7 @@ func NewClientForConfig(cfg *rest.Config, descriptor model.ConfigDescriptor, dom
 	}
 
 	for _, v := range out.clientset {
-		if err := v.init("", "", nil); err != nil {
+		if err := v.init("", "", cfg); err != nil {
 			return nil, err
 		}
 	}
