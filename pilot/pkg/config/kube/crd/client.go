@@ -118,15 +118,9 @@ func newClientSet(descriptor model.ConfigDescriptor) (map[string]*restClient, er
 func (rc *restClient) init(kubeconfig string, context string, cfg *rest.Config) error {
 	var err error
 
-	if cfg == nil {
-		cfg, err = rc.createRESTConfig(kubeconfig, context)
-		if err != nil {
-			return err
-		}
-	} else {
-		cfg.GroupVersion = &rc.apiVersion
-		cfg.APIPath = "/apis"
-		cfg.ContentType = runtime.ContentTypeJSON
+	cfg, err = rc.createRESTConfig(kubeconfig, context, cfg)
+	if err != nil {
+		return err
 	}
 
 	dynamic, err := rest.RESTClientFor(cfg)
@@ -140,11 +134,16 @@ func (rc *restClient) init(kubeconfig string, context string, cfg *rest.Config) 
 }
 
 // createRESTConfig for cluster API server, pass empty config file for in-cluster
-func (rc *restClient) createRESTConfig(kubeconfig string, context string) (config *rest.Config, err error) {
-	config, err = kubecfg.BuildClientConfig(kubeconfig, context)
-
-	if err != nil {
-		return nil, err
+func (rc *restClient) createRESTConfig(kubeconfig string, context string, cfg *rest.Config) (*rest.Config, error) {
+	var config *rest.Config
+	var err error
+	if cfg != nil {
+		config = cfg
+	} else {
+		config, err = kubecfg.BuildClientConfig(kubeconfig, context)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	config.GroupVersion = &rc.apiVersion
