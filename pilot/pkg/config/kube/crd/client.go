@@ -39,6 +39,7 @@ import (
 	"istio.io/istio/pilot/pkg/model"
 	kubecfg "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/log"
+	"errors"
 )
 
 // IstioObject is a k8s wrapper interface for config objects
@@ -122,6 +123,10 @@ func (rc *restClient) init(kubeconfig string, context string, cfg *rest.Config) 
 		if err != nil {
 			return err
 		}
+	} else {
+		cfg.GroupVersion = &rc.apiVersion
+		cfg.APIPath = "/apis"
+		cfg.ContentType = runtime.ContentTypeJSON
 	}
 
 	dynamic, err := rest.RESTClientFor(cfg)
@@ -187,6 +192,11 @@ func NewClient(config string, context string, descriptor model.ConfigDescriptor,
 
 // NewClientForConfig creates a client to Kubernetes API using provided *rest.Config.
 func NewClientForConfig(cfg *rest.Config, descriptor model.ConfigDescriptor, domainSuffix string) (*Client, error) {
+
+	if cfg == nil {
+		return nil, errors.New("cfg missing")
+	}
+
 	cs, err := newClientSet(descriptor)
 	if err != nil {
 		return nil, err
