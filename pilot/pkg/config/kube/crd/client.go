@@ -159,10 +159,12 @@ func (rc *restClient) createRESTConfig(kubeconfig string, context string, cfg *r
 			meta_v1.AddToGroupVersion(scheme, rc.apiVersion)
 			return nil
 		})
-	err = schemeBuilder.AddToScheme(types)
+	if err = schemeBuilder.AddToScheme(types); err != nil {
+		return nil, err
+	}
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(types)}
 
-	return
+	return config, nil
 }
 
 // NewClient creates a client to Kubernetes API using a kubeconfig file.
