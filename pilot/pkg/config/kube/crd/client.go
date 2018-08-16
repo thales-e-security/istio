@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -114,10 +114,14 @@ func newClientSet(descriptor model.ConfigDescriptor) (map[string]*restClient, er
 	return cs, nil
 }
 
-func (rc *restClient) init(kubeconfig string, context string) error {
-	cfg, err := rc.createRESTConfig(kubeconfig, context)
-	if err != nil {
-		return err
+func (rc *restClient) init(kubeconfig string, context string, cfg *rest.Config) error {
+	var err error
+
+	if cfg == nil {
+		cfg, err = rc.createRESTConfig(kubeconfig, context)
+		if err != nil {
+			return err
+		}
 	}
 
 	dynamic, err := rest.RESTClientFor(cfg)
@@ -173,7 +177,28 @@ func NewClient(config string, context string, descriptor model.ConfigDescriptor,
 	}
 
 	for _, v := range out.clientset {
-		if err := v.init(config, context); err != nil {
+		if err := v.init(config, context, nil); err != nil {
+			return nil, err
+		}
+	}
+
+	return out, nil
+}
+
+// NewClientForConfig creates a client to Kubernetes API using provided *rest.Config.
+func NewClientForConfig(cfg *rest.Config, descriptor model.ConfigDescriptor, domainSuffix string) (*Client, error) {
+	cs, err := newClientSet(descriptor)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &Client{
+		clientset:    cs,
+		domainSuffix: domainSuffix,
+	}
+
+	for _, v := range out.clientset {
+		if err := v.init("", "", nil); err != nil {
 			return nil, err
 		}
 	}
